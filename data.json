@@ -1,0 +1,13 @@
+{
+  "products": [
+    {
+      "id": "af8c4103-09e5-4e23-846e-24dcb9afb2c7",
+      "name": "Men's Dunk Low Retro Sneaker",
+      "image": "https://m.media-amazon.com/images/I/71epFdlRFhS.jpg",
+      "price_string": "₹6,014₹6,014",
+      "price_symbol": "₹",
+      "price": 6014,
+      "quantity": 1
+    }
+  ]
+}

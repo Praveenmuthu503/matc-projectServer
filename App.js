@@ -14,22 +14,87 @@ app.use(cors(corsOptions));
 app.use(express.json()); //midilewhere
 
 const userdb = JSON.parse(fs.readFileSync("./db.json", "utf-8"));
+const productDb = JSON.parse(fs.readFileSync("./data.json", "utf-8"));
 app.listen(Port, () => {
   console.log(`"Good" Your app is Runnig GOOD ${Port}`);
 });
 app.get("/", (req, res) => {
   res.send(userdb);
 });
+app.get("/cartProducts", (req, res) => {
+  res.send(productDb.products);
+});
 app.post("/checkAuth", (req, res) => {
   checkAuth(req, res);
+});
+function isChecked({ name }) {
+  return (
+    productDb.products.findIndex((product) => product.name === name) !== -1
+  );
+}
+app.post("/addToCart", (req, res) => {
+  console.log("text+=+=+=+=+=+=", req.body);
+  const { id, name, image, price_string, price_symbol, price } = req.body;
+  if (isChecked({ name })) {
+    const status = 401;
+    const message = "Already Added To the Cart";
+    res.status(status).json({ status, message });
+    return;
+  }
+  fs.readFile("./data.json", (err, data) => {
+    if (err) {
+      const status = 401;
+      const message = err;
+      res.status(status).json({ status, message });
+      return;
+    }
+    data = JSON.parse(data.toString());
+    data.products.push({
+      id: id,
+      name: name,
+      image: image,
+      price_string: price_string,
+      price_symbol: price_symbol,
+      price: price,
+      quantity: 1,
+    });
+    let writeData = fs.writeFile(
+      "./data.json",
+      JSON.stringify(data),
+      (err, result) => {
+        if (err) {
+          const status = 401;
+          const message = err;
+          res.status(status).json({ status, message });
+        }
+      }
+    );
+  });
+  res.status(200).json(req.body);
+});
+
+app.delete("/removeCart", (req, res) => {
+  console.log("text+==++==", req.body);
+  const { name } = req.body;
+  var removeProduct = name;
+  var data = fs.readFileSync("data.json");
+  var json = JSON.parse(data);
+  var products = json.products;
+  json.products = products.filter((product) => {
+    return product.name !== removeProduct;
+  });
+  fs.writeFileSync("data.json", JSON.stringify(json, null, 2));
+  const status = 200;
+  const message = "Product Was Removed From Cart";
+  res.status(status).json({ status, message });
 });
 
 function isAuthenticated({ userMail, userPassword }) {
   return (
     userdb.users.findIndex(
       (user) => user.userMail === userMail && user.userPassword === userPassword
-      ) !== -1
-      );
+    ) !== -1
+  );
 }
 
 app.post("/register", (req, res) => {
@@ -54,24 +119,11 @@ app.post("/register", (req, res) => {
       userMail: userMail,
       userPassword: userPassword,
     });
-    let writeData = fs.writeFile(
-      "./db.json",
-      JSON.stringify(data),
-      (err, result) => {
-        if (err) {
-          const status = 401;
-          const message = err;
-          res.status(status).json({ status, message });
-        }
-      }
-      );
-    });
-    res.status(200).json(req.body);
   });
-  
-  app.post("/login", (req, res) => {
-  console.log("=====================================",req)
+  res.status(200).json(req.body);
+});
 
+app.post("/login", (req, res) => {
   const { userEmail, userPassword } = req.body;
   const data = userdb.users.find(
     (val) =>
@@ -84,7 +136,7 @@ app.post("/register", (req, res) => {
       error: { msg: "Invalid credentials" },
     });
   } else {
-    const Token = jwt.sign({ userEmail }, "hdhdhdhd", { expiresIn: "5m" });
+    const Token = jwt.sign({ userEmail }, "hdhdhdhd", { expiresIn: "30m" });
     const refreshToken = jwt.sign({ userEmail }, "hdhdhdhd", {
       expiresIn: "1h",
     });
